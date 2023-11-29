@@ -39,6 +39,18 @@ async function run() {
     const postCollection = client.db('alphaDB').collection('posts')
     const subCollection = client.db('alphaDB').collection('subs')
 
+    // user api
+    app.post('/users', async (req, res) => {
+      const user = req.body;
+      console.log(user);
+      const query = { email: user.email }
+      const existingUser = await userCollection.findOne(query);
+      if (existingUser) {
+          return res.send({ message: 'user already exists', insertedId: null })
+      }
+      const result = await userCollection.insertOne(user);
+      res.send(result);
+  })
     // photo api
 
     app.get('/photos', async (req, res) => {
