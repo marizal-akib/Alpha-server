@@ -41,6 +41,7 @@ async function run() {
     const teamCollection = client.db('alphaDB').collection('team')
     const applyCollection = client.db('alphaDB').collection('apply')
     const bookingCollection = client.db('alphaDB').collection('booking')
+    const classCollection = client.db('alphaDB').collection('class')
 
     // user api
     app.post('/users', async (req, res) => {
@@ -72,8 +73,8 @@ async function run() {
   })
 
 
-  // trainer booking
-  app.post('/book'async (req, res) =>{
+  // trainer booking api
+  app.post('/booking',async (req, res) =>{
     const booking = req.body;
     const result = await bookingCollection.insertOne(booking);
     res.send(result)
@@ -107,9 +108,30 @@ async function run() {
     app.get('/posts', async (req, res) => {
       const size = parseInt(req.query.size)
       const page = parseInt(req.query.page)
-      const result = await postCollection.find().sort({ vote: -1 }).skip(page * size).limit(size).toArray();
+      const result = await postCollection.find().skip(page * size).limit(size).toArray();
       res.send(result);
     })
+
+    app.put('/posts/:id', async (req, res)=>{
+      const click = req.body
+      console.log(click);
+      const id = req.params.id
+      const filter = {_id : id}
+      const updatedDoc ={
+         $set:{
+             vote : click.vote
+         }
+      }
+
+      const result = await postCollection.updateOne(filter, updatedDoc);
+      res.send(result);
+ })
+//  class api
+app.get('/class', async (req, res) => {
+  const result = await classCollection.find().toArray();
+  res.send(result);
+})
+
 // newsletter api
 subCollection.createIndex({ email: 1 }, { unique: true });
 app.post('/sub', async (req, res) => {
