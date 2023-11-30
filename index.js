@@ -40,6 +40,7 @@ async function run() {
     const subCollection = client.db('alphaDB').collection('subs')
     const teamCollection = client.db('alphaDB').collection('team')
     const applyCollection = client.db('alphaDB').collection('apply')
+    const bookingCollection = client.db('alphaDB').collection('booking')
 
     // user api
     app.post('/users', async (req, res) => {
@@ -68,6 +69,14 @@ async function run() {
     // console.log(page, size);
     const result = await teamCollection.find(query).toArray();
     res.send(result);
+  })
+
+
+  // trainer booking
+  app.post('/book'async (req, res) =>{
+    const booking = req.body;
+    const result = await bookingCollection.insertOne(booking);
+    res.send(result)
   })
     // photo api
 
