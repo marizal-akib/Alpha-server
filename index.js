@@ -39,6 +39,7 @@ async function run() {
     const postCollection = client.db('alphaDB').collection('posts')
     const subCollection = client.db('alphaDB').collection('subs')
     const teamCollection = client.db('alphaDB').collection('team')
+    const applyCollection = client.db('alphaDB').collection('apply')
 
     // user api
     app.post('/users', async (req, res) => {
@@ -53,7 +54,7 @@ async function run() {
       res.send(result);
   })
   // trainer api
-  app.get('/team,', async (req, res) => {
+  app.get('/team', async (req, res) => {
     const page = parseInt(req.query.page)
     const size = parseInt(req.query.size)
     console.log(page, size);
@@ -69,6 +70,14 @@ async function run() {
       const result = await photoCollection.find().skip(page * size).limit(size).toArray();
       res.send(result);
     })
+
+    // application api
+    app.post('/apply', async (req, res) => {
+      const application = req.body;
+      console.log(application);
+      const result = await userCollection.insertOne(application);
+      res.send(result);
+  })
 
     // reviews api
     app.get('/reviews', async (req, res) => {
