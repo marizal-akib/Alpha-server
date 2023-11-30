@@ -61,6 +61,14 @@ async function run() {
     const result = await teamCollection.find().skip(page * size).limit(size).toArray();
     res.send(result);
   })
+  app.get('/team/:id', async (req, res) => {
+    const id = req.params.id
+    const query = {_id : id} 
+   
+    // console.log(page, size);
+    const result = await teamCollection.find(query).toArray();
+    res.send(result);
+  })
     // photo api
 
     app.get('/photos', async (req, res) => {
@@ -75,7 +83,7 @@ async function run() {
     app.post('/apply', async (req, res) => {
       const application = req.body;
       console.log(application);
-      const result = await userCollection.insertOne(application);
+      const result = await applyCollection.insertOne(application);
       res.send(result);
   })
 
