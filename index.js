@@ -33,11 +33,12 @@ async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
     // await client.connect();
-
     const reviewCollection = client.db('alphaDB').collection('reviews')
+    const userCollection = client.db('alphaDB').collection('user')
     const photoCollection = client.db('alphaDB').collection('photos')
     const postCollection = client.db('alphaDB').collection('posts')
     const subCollection = client.db('alphaDB').collection('subs')
+    const teamCollection = client.db('alphaDB').collection('team')
 
     // user api
     app.post('/users', async (req, res) => {
@@ -50,6 +51,14 @@ async function run() {
       }
       const result = await userCollection.insertOne(user);
       res.send(result);
+  })
+  // trainer api
+  app.get('/team,', async (req, res) => {
+    const page = parseInt(req.query.page)
+    const size = parseInt(req.query.size)
+    console.log(page, size);
+    const result = await teamCollection.find().skip(page * size).limit(size).toArray();
+    res.send(result);
   })
     // photo api
 
