@@ -18,7 +18,7 @@ app.use(express.json());
 
 
 
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const uri = `mongodb+srv://${process.env.USER}:${process.env.PASS}@cluster0.irissz7.mongodb.net/?retryWrites=true&w=majority`;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
@@ -37,12 +37,13 @@ async function run() {
     const reviewCollection = client.db('alphaDB').collection('reviews')
     const userCollection = client.db('alphaDB').collection('user')
     const photoCollection = client.db('alphaDB').collection('photos')
-    const postCollection = client.db('alphaDB').collection('posts')
+    const postCollection = client.db('alphaDB').collection('post')
     const subCollection = client.db('alphaDB').collection('subs')
-    const teamCollection = client.db('alphaDB').collection('team')
+    const teamCollection = client.db('alphaDB').collection('teams')
     const applyCollection = client.db('alphaDB').collection('apply')
     const bookingCollection = client.db('alphaDB').collection('booking')
     const classCollection = client.db('alphaDB').collection('class')
+    const packCollection = client.db('alphaDB').collection('pack')
 
     // user api
     app.post('/users', async (req, res) => {
@@ -51,35 +52,79 @@ async function run() {
       const query = { email: user.email }
       const existingUser = await userCollection.findOne(query);
       if (existingUser) {
-          return res.send({ message: 'user already exists', insertedId: null })
+        return res.send({ message: 'user already exists', insertedId: null })
       }
       const result = await userCollection.insertOne(user);
       res.send(result);
-  })
-  // trainer api
-  app.get('/team', async (req, res) => {
-    const page = parseInt(req.query.page)
-    const size = parseInt(req.query.size)
-    console.log(page, size);
-    const result = await teamCollection.find().skip(page * size).limit(size).toArray();
-    res.send(result);
-  })
-  app.get('/team/:id', async (req, res) => {
-    const id = req.params.id
-    const query = {_id : id} 
-   
-    // console.log(page, size);
-    const result = await teamCollection.find(query).toArray();
-    res.send(result);
-  })
+    })
+    // trainer api
+    app.get('/team', async (req, res) => {
+      const page = parseInt(req.query.page)
+      const size = parseInt(req.query.size)
+      console.log(page, size);
+      const result = await teamCollection.find().skip(page * size).limit(size).toArray();
+      res.send(result);
+    })
+    app.get('/team/:id', async (req, res) => {
+      const id = req.params.id
+      const query = { _id: new ObjectId(id) }
+
+      // console.log(page, size);
+      const result = await teamCollection.find(query).toArray();
+      res.send(result);
+    })
 
 
-  // trainer booking api
-  app.post('/booking',async (req, res) =>{
-    const booking = req.body;
-    const result = await bookingCollection.insertOne(booking);
-    res.send(result)
-  })
+    app.patch('/accept/:id', async (req, res) => {
+      const data = req.body
+      const id = req.params.id
+      console.log(id);
+      const filter = { email: id }
+      const updatedDoc = {
+        $set: {
+
+          email: data.email,
+          age: data.age,
+          week: data.week,
+          time: data.time,
+          other: data.other,
+
+          skill: data.skill,
+          img: data.img,
+          role: data.role,
+        }
+      }
+      const acceptResult = await userCollection.updateOne(filter, updatedDoc);
+      const query = {
+        _id: new ObjectId(data._id)
+      }
+
+      const deleteResult = await applyCollection.deleteOne(query);
+
+      // delete item from cart
+      console.log('trainer info', data);
+      res.send({ acceptResult, deleteResult })
+    })
+
+    app.put('/pay/:id', async (req, res) => {
+      const pay = req.body
+      const id = req.params.id
+      const filter = { _id: new ObjectId(id) }
+      const updatedDoc = {
+        $set: {
+          lastPaid: pay.lastPaid
+        }
+      }
+
+      const result = await teamCollection.updateOne(filter, updatedDoc);
+      res.send(result);
+    })
+    // trainer booking api
+    app.post('/booking', async (req, res) => {
+      const booking = req.body;
+      const result = await bookingCollection.insertOne(booking);
+      res.send(result)
+    })
     // photo api
 
     app.get('/photos', async (req, res) => {
@@ -96,7 +141,11 @@ async function run() {
       console.log(application);
       const result = await applyCollection.insertOne(application);
       res.send(result);
-  })
+    })
+    app.get('/apply', async (req, res) => {
+      const result = await applyCollection.find().toArray();
+      res.send(result);
+    })
 
     // reviews api
     app.get('/reviews', async (req, res) => {
@@ -104,6 +153,12 @@ async function run() {
       const result = await reviewCollection.find().toArray();
       res.send(result);
     })
+    // packCollection api
+    app.get('/pack', async (req, res) => {
+      const result = await packCollection.find().toArray();
+      res.send(result);
+    })
+
 
     // post api
     app.get('/posts', async (req, res) => {
@@ -113,55 +168,69 @@ async function run() {
       res.send(result);
     })
 
-    app.put('/posts/:id', async (req, res)=>{
+    app.put('/posts/:id', async (req, res) => {
       const click = req.body
       console.log(click);
       const id = req.params.id
-      const filter = {_id : id}
-      const updatedDoc ={
-         $set:{
-             vote : click.vote
-         }
+      const filter = { _id: new ObjectId(id) }
+      const updatedDoc = {
+        $set: {
+          vote: click.vote
+        }
       }
 
       const result = await postCollection.updateOne(filter, updatedDoc);
       res.send(result);
-
-    app.put('/post/:id', async (req, res)=>{
+    })
+    app.put('/post/:id', async (req, res) => {
       const click = req.body
       console.log(click);
       const id = req.params.id
-      const filter = {_id : id}
-      const updatedDoc ={
-         $set:{
-             vote : click.vote
-         }
+      const filter = { _id: new ObjectId(id) }
+      const updatedDoc = {
+        $set: {
+          vote: click.vote
+        }
       }
 
       const result = await postCollection.updateOne(filter, updatedDoc);
       res.send(result);
- })
-//  class api
-app.get('/class', async (req, res) => {
-  const result = await classCollection.find().toArray();
-  res.send(result);
-})
+    })
+    //  class api
+    app.get('/class', async (req, res) => {
+      const result = await classCollection.find().toArray();
+      res.send(result);
+    })
 
-// newsletter api
-subCollection.createIndex({ email: 1 }, { unique: true });
-app.post('/sub', async (req, res) => {
-  const user = req.body;
-  try {
-    const result = await subCollection.insertOne(user);
-    res.send(result);
-  } catch (error) {
-    if (error.code === 11000) {
-      res.status(400).send('Duplicate entry found. Please provide a unique value.');
-    } else {
-      res.status(500).send('Internal server error');
-    }
-  }
-})
+
+    app.get('/class/:id', async (req, res) => {
+      const id = req.params.id
+      const query = { _id: new ObjectId(id) }
+      const result = await classCollection.find(query).toArray();
+      res.send(result);
+    })
+
+    // newsletter api
+    app.get('/subs', async (req, res) => {
+
+      const result = await subCollection.find().toArray();
+      res.send(result);
+    })
+
+    subCollection.createIndex({ email: 1 }, { unique: true });
+    app.post('/sub', async (req, res) => {
+      const user = req.body;
+      try {
+        const result = await subCollection.insertOne(user);
+        res.send(result);
+      } catch (error) {
+        if (error.code === 11000) {
+          res.status(400).send('Duplicate entry found. Please provide a unique value.');
+        } else {
+          res.status(500).send('Internal server error');
+        }
+      }
+    })
     // Send a ping to confirm a successful connection
     // await client.db("admin").command({ ping: 1 });
     // console.log("Pinged your deployment. You successfully connected to MongoDB!");
